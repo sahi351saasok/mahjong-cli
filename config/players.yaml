@@ -1,0 +1,9 @@
+players:
+  - name: "CPU1"
+    strategy: standard
+  - name: "CPU2"
+    strategy: standard
+  - name: "CPU3"
+    strategy: standard
+  - name: "CPU4"
+    strategy: standard
