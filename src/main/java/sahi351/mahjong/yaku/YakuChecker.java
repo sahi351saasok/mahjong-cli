@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import sahi351.mahjong.game.Wind;
 import sahi351.mahjong.hand.Group;
 import sahi351.mahjong.hand.GroupType;
 import sahi351.mahjong.hand.Hand;
@@ -378,7 +377,6 @@ public final class YakuChecker {
     }
 
     private static Integer checkSanshokuDoujun(List<Group> groups, boolean menzen) {
-        Set<Integer> starts = new HashSet<>();
         for (int start = 1; start <= 7; start++) {
             boolean m = false, p = false, s = false;
             for (Group g : groups) {
@@ -520,7 +518,6 @@ public final class YakuChecker {
 
     public static List<YakuResult> checkKokushi(WinContext ctx) {
         List<Tile> tiles = ctx.hand().allTiles();
-        int[] counts = new int[10];
         Map<Integer, Integer> byIndex = new HashMap<>();
         for (Tile t : tiles) {
             byIndex.merge(TileIndex.of(t), 1, Integer::sum);

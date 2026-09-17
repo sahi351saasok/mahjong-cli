@@ -17,8 +17,6 @@ public final class ScoreResult {
     private final int ronPayment;
     private final int tsumoDealerPayment;
     private final int tsumoNonDealerPayment;
-    private final int honba;
-    private final int honbaBonus;
 
     public ScoreResult(List<YakuResult> yakuList, int han, int fu, ScoreTier tier, int basePoints,
                         boolean dealer, boolean tsumo, int ronPayment,
@@ -30,9 +28,7 @@ public final class ScoreResult {
         this.basePoints = basePoints;
         this.dealer = dealer;
         this.tsumo = tsumo;
-        this.honba = honba;
         int perHonba = 100;
-        this.honbaBonus = honba * (tsumo ? perHonba : perHonba * 3);
         this.ronPayment = ronPayment + (tsumo ? 0 : honba * perHonba * 3);
         this.tsumoDealerPayment = tsumoDealerPayment + (tsumo ? honba * perHonba : 0);
         this.tsumoNonDealerPayment = tsumoNonDealerPayment + (tsumo ? honba * perHonba : 0);
