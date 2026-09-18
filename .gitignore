@@ -1,4 +1,4 @@
 .gradle/
 build/
-logs/*.txt
+logs/*.csv
 !logs/.gitkeep
