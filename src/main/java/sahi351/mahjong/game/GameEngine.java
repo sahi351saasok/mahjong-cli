@@ -55,9 +55,9 @@ public final class GameEngine {
 
     public void run() {
         dealerSeatIndex = random.nextInt(4);
-        logger.log("=== 対局開始 (" + (mode == GameMode.HANCHAN ? "半荘戦" : "1局のみ") + ") ===");
-        logger.log("起家: " + players.get(dealerSeatIndex).name());
-        logger.blank();
+        logger.console("=== 対局開始 (" + (mode == GameMode.HANCHAN ? "半荘戦" : "1局のみ") + ") ===");
+        logger.console("起家: " + players.get(dealerSeatIndex).name());
+        logger.consoleBlank();
 
         while (true) {
             boolean renchan = playKyoku();
@@ -98,9 +98,10 @@ public final class GameEngine {
 
     /** @return 親が続投する（連荘）場合 true */
     private boolean playKyoku() {
+        int[] pointsBefore = players.stream().mapToInt(Player::points).toArray();
         setupKyoku();
-        logger.blank();
-        logger.log(String.format("--- %s%d局%d本場 (親: %s) ドラ表示牌: %s ---",
+        logger.consoleBlank();
+        logger.console(String.format("--- %s%d局%d本場 (親: %s) ドラ表示牌: %s ---",
                 roundWind.label(), kyokuNumber, honba, players.get(dealerSeatIndex).name(),
                 wall.doraIndicators()));
 
@@ -118,7 +119,42 @@ public final class GameEngine {
             currentIndex = (currentIndex + 1) % 4;
         }
 
+        printKyokuEndSummary(pointsBefore);
         return lastKyokuWasRenchan;
+    }
+
+    private String kyokuLabel() {
+        return roundWind.label() + kyokuNumber + "局";
+    }
+
+    private void printKyokuEndSummary(int[] pointsBefore) {
+        logger.consoleBlank();
+        logger.console("--- 本局結果 ---");
+        for (Player p : players) {
+            int delta = p.points() - pointsBefore[p.seatIndex()];
+            logger.console(String.format("%s: %d点 (%s%d)", p.name(), p.points(),
+                    delta >= 0 ? "+" : "", delta));
+        }
+        for (Player p : players) {
+            logger.console(p.name() + " 河: " + riverDisplay(p));
+        }
+    }
+
+    private String riverDisplay(Player p) {
+        List<Tile> discards = p.discards();
+        List<Boolean> riichiFlags = p.discardRiichiTile();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < discards.size(); i++) {
+            if (i > 0) {
+                sb.append(' ');
+            }
+            if (riichiFlags.get(i)) {
+                sb.append('[').append(discards.get(i)).append(']');
+            } else {
+                sb.append(discards.get(i));
+            }
+        }
+        return sb.toString();
     }
 
     private boolean lastKyokuWasRenchan;
@@ -197,9 +233,10 @@ public final class GameEngine {
             player.declareRiichi(turnCount, doubleRiichi);
             player.addPoints(-1000);
             riichiSticks++;
-            logger.log(player.name() + ": リーチ宣言 (" + discard + (doubleRiichi ? ") [ダブルリーチ]" : ")"));
+            logger.record(kyokuLabel(), honba, turnCount, player.name(), "リーチ宣言",
+                    discard + (doubleRiichi ? " (ダブルリーチ)" : ""));
         } else {
-            logger.log(player.name() + ": 打 " + discard);
+            logger.record(kyokuLabel(), honba, turnCount, player.name(), "打牌", discard.toString());
         }
 
         resolveAfterDiscard(player, discard);
@@ -292,7 +329,7 @@ public final class GameEngine {
         kanCountThisKyoku++;
         onCallHappened();
         wall.revealNewDoraIndicator();
-        logger.log(player.name() + ": 暗槓 " + kind);
+        logger.record(kyokuLabel(), honba, turnCount, player.name(), "暗槓", kind.toString());
 
         Tile rinshan = wall.drawRinshan();
         player.hand().addTile(rinshan);
@@ -323,7 +360,8 @@ public final class GameEngine {
             }
         }
         if (chankanResult != null) {
-            logger.log(player.name() + ": 加槓 " + kind + " → " + chankanWinner.name() + " 槍槓!");
+            logger.record(kyokuLabel(), honba, turnCount, player.name(), "加槓",
+                    kind + " (槍槓: " + chankanWinner.name() + ")");
             finishWithRon(chankanWinner, player, chankanResult);
             return true;
         }
@@ -333,7 +371,7 @@ public final class GameEngine {
         kanCountThisKyoku++;
         onCallHappened();
         wall.revealNewDoraIndicator();
-        logger.log(player.name() + ": 加槓 " + kind);
+        logger.record(kyokuLabel(), honba, turnCount, player.name(), "加槓", kind.toString());
 
         Tile rinshan = wall.drawRinshan();
         player.hand().addTile(rinshan);
@@ -499,8 +537,8 @@ public final class GameEngine {
         caller.hand().addMeld(meld);
         callHappened = true;
         onCallHappened();
-        logger.log(caller.name() + ": " + labelFor(option.type()) + " " + discardedTile
-                + " (" + discarder.name() + "の牌)");
+        logger.record(kyokuLabel(), honba, turnCount, caller.name(), labelFor(option.type()),
+                discardedTile + " (" + discarder.name() + "の牌)");
 
         if (option.type() == CallType.KAN) {
             kanCountThisKyoku++;
@@ -522,7 +560,7 @@ public final class GameEngine {
         Tile discard = caller.strategy().chooseDiscard(ctx);
         caller.hand().removeTile(discard);
         caller.addDiscard(discard, false);
-        logger.log(caller.name() + ": 打 " + discard);
+        logger.record(kyokuLabel(), honba, turnCount, caller.name(), "打牌", discard.toString());
         resolveAfterDiscard(caller, discard);
     }
 
@@ -547,8 +585,9 @@ public final class GameEngine {
     }
 
     private void finishWithTsumo(Player winner, ScoreResult result) {
-        logger.log(winner.name() + ": ツモ和了!");
+        logger.console(winner.name() + ": ツモ和了!");
         logScoreResult(winner, result);
+        logger.record(kyokuLabel(), honba, turnCount, winner.name(), "ツモ和了", yakuSummary(result));
         int stickBonus = riichiSticks * 1000;
         if (result.isDealer()) {
             for (int offset = 1; offset <= 3; offset++) {
@@ -581,8 +620,10 @@ public final class GameEngine {
         for (int i = 0; i < winners.size(); i++) {
             Player winner = winners.get(i);
             ScoreResult result = results.get(i);
-            logger.log(winner.name() + ": ロン和了! (放銃: " + discarder.name() + ")");
+            logger.console(winner.name() + ": ロン和了! (放銃: " + discarder.name() + ")");
             logScoreResult(winner, result);
+            logger.record(kyokuLabel(), honba, turnCount, winner.name(), "ロン和了",
+                    "放銃:" + discarder.name() + " " + yakuSummary(result));
             int gain = result.ronPayment() + (firstWinnerGetsSticks ? stickBonus : 0);
             firstWinnerGetsSticks = false;
             winner.addPoints(gain);
@@ -599,7 +640,7 @@ public final class GameEngine {
         if (!winner.hand().melds().isEmpty()) {
             sb.append(" 副露: ").append(winner.hand().melds());
         }
-        logger.log(sb.toString());
+        logger.console(sb.toString());
         StringBuilder yakuLine = new StringBuilder("  役: ");
         for (var y : result.yakuList()) {
             yakuLine.append(y.name());
@@ -608,19 +649,38 @@ public final class GameEngine {
             }
             yakuLine.append(' ');
         }
-        logger.log(yakuLine.toString());
+        logger.console(yakuLine.toString());
         String scoreLine = result.tier() == sahi351.mahjong.score.ScoreTier.NORMAL
                 ? String.format("  %d翻%d符 %d点", result.han(), result.fu(), result.totalPoints())
                 : String.format("  %d翻%d符 %s %d点", result.han(), result.fu(), result.tier().label(), result.totalPoints());
-        logger.log(scoreLine);
+        logger.console(scoreLine);
+    }
+
+    private String yakuSummary(ScoreResult result) {
+        StringBuilder sb = new StringBuilder();
+        for (var y : result.yakuList()) {
+            if (sb.length() > 0) {
+                sb.append(';');
+            }
+            sb.append(y.name());
+            if (!y.yakuman()) {
+                sb.append('(').append(y.han()).append("翻)");
+            }
+        }
+        String scoreLabel = result.tier() == sahi351.mahjong.score.ScoreTier.NORMAL
+                ? String.format("%d翻%d符 %d点", result.han(), result.fu(), result.totalPoints())
+                : String.format("%d翻%d符 %s %d点", result.han(), result.fu(), result.tier().label(), result.totalPoints());
+        return sb.append(' ').append(scoreLabel).toString();
     }
 
     private void resolveRyuukyoku() {
-        logger.log("--- 流局 ---");
+        logger.console("--- 流局 ---");
         List<Player> tenpaiPlayers = new ArrayList<>();
         for (Player p : players) {
             boolean tenpai = p.hand().isTenpai();
-            logger.log(p.name() + ": " + (tenpai ? "テンパイ " + p.hand().sortedConcealedTiles() : "ノーテン"));
+            String detail = tenpai ? "テンパイ " + p.hand().sortedConcealedTiles() : "ノーテン";
+            logger.console(p.name() + ": " + detail);
+            logger.record(kyokuLabel(), honba, turnCount, p.name(), "流局", detail);
             if (tenpai) {
                 tenpaiPlayers.add(p);
             }
@@ -644,8 +704,8 @@ public final class GameEngine {
     }
 
     private void printFinalResult() {
-        logger.blank();
-        logger.log("=== 対局結果 ===");
+        logger.consoleBlank();
+        logger.console("=== 対局結果 ===");
         List<Player> ranked = new ArrayList<>(players);
         ranked.sort((a, b) -> {
             if (b.points() != a.points()) {
@@ -678,7 +738,7 @@ public final class GameEngine {
         for (int rank = 0; rank < 4; rank++) {
             Player p = ranked.get(rank);
             double pt = pointsByPlayer[players.indexOf(p)];
-            logger.log(String.format("%d位: %s  %d点  %.1fpt", rank + 1, p.name(), p.points(), pt));
+            logger.console(String.format("%d位: %s  %d点  %.1fpt", rank + 1, p.name(), p.points(), pt));
         }
     }
 }

@@ -103,6 +103,10 @@ public final class Player {
         return discards;
     }
 
+    public List<Boolean> discardRiichiTile() {
+        return discardRiichiTile;
+    }
+
     public void addDiscard(Tile tile, boolean isRiichiTile) {
         discards.add(tile);
         discardRiichiTile.add(isRiichiTile);
