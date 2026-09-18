@@ -94,7 +94,6 @@ public final class BalanceStrategy implements PlayerStrategy {
     @Override
     public CallOption decideNaki(AiContext ctx, Tile discardedTile, List<CallOption> legalOptions) {
         List<Tile> concealed = ctx.ownHand().concealedTiles();
-        int meldCount = ctx.ownHand().melds().size();
 
         for (CallOption option : legalOptions) {
             if (option.type() == CallType.PASS) {
