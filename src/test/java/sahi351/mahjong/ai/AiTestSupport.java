@@ -52,11 +52,20 @@ final class AiTestSupport {
         return new PlayerPublicView(name, seatIndex, Wind.SOUTH, 25000, discards, List.of(), false);
     }
 
+    static PlayerPublicView opponentWithPoints(String name, int seatIndex, Wind seatWind, int points) {
+        return new PlayerPublicView(name, seatIndex, seatWind, points, List.of(), List.of(), false);
+    }
+
     static AiContext context(Hand hand, List<PlayerPublicView> others) {
         return context(hand, others, List.of());
     }
 
     static AiContext context(Hand hand, List<PlayerPublicView> others, List<Tile> doraIndicators) {
-        return new AiContext(hand, Wind.EAST, Wind.EAST, 0, 60, doraIndicators, others, 5, 25000);
+        return new AiContext(hand, Wind.EAST, Wind.EAST, 1, 0, 60, doraIndicators, others, 5, 25000);
+    }
+
+    static AiContext context(Hand hand, Wind ownSeatWind, Wind roundWind, int kyokuNumber,
+                              int ownPoints, List<PlayerPublicView> others) {
+        return new AiContext(hand, ownSeatWind, roundWind, kyokuNumber, 0, 60, List.of(), others, 5, ownPoints);
     }
 }

@@ -8,7 +8,7 @@ import sahi351.mahjong.tile.Tile;
 /**
  * CPU思考ロジックに渡す、公開情報のみで構成されたゲーム状況のスナップショット。
  */
-public record AiContext(Hand ownHand, Wind ownSeatWind, Wind roundWind, int honba,
+public record AiContext(Hand ownHand, Wind ownSeatWind, Wind roundWind, int kyokuNumber, int honba,
                          int wallRemaining, List<Tile> doraIndicators,
                          List<PlayerPublicView> others, int turnNumber, int ownPoints) {
 

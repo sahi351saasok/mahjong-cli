@@ -580,7 +580,7 @@ public final class GameEngine {
             others.add(new PlayerPublicView(p.name(), p.seatIndex(), p.seatWind(), p.points(),
                     p.discards(), p.hand().melds(), p.isRiichi()));
         }
-        return new AiContext(self.hand(), self.seatWind(), roundWind, honba,
+        return new AiContext(self.hand(), self.seatWind(), roundWind, kyokuNumber, honba,
                 wall.remainingLiveTiles(), wall.doraIndicators(), others, turnCount, self.points());
     }
 

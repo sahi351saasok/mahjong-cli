@@ -2,6 +2,7 @@ package sahi351.mahjong.ai;
 
 import java.util.ArrayList;
 import java.util.List;
+import sahi351.mahjong.game.Wind;
 import sahi351.mahjong.hand.Hand;
 import sahi351.mahjong.hand.Meld;
 import sahi351.mahjong.hand.ShantenCalculator;
@@ -71,6 +72,33 @@ final class AiSupport {
             case KAN -> Meld.minkan(tiles, calledTile, -1);
             case PASS -> throw new IllegalArgumentException("PASSはMeldにできない");
         };
+    }
+
+    /** 自身の現在の順位（1〜4）を、同点の場合は起家に近い側を上位として求める。 */
+    static int ownRank(AiContext ctx) {
+        int rank = 1;
+        for (PlayerPublicView p : ctx.others()) {
+            if (isAhead(p.points(), p.seatWind(), ctx.ownPoints(), ctx.ownSeatWind())) {
+                rank++;
+            }
+        }
+        return rank;
+    }
+
+    private static boolean isAhead(int otherPoints, Wind otherWind, int ownPoints, Wind ownWind) {
+        if (otherPoints != ownPoints) {
+            return otherPoints > ownPoints;
+        }
+        return otherWind.ordinal() < ownWind.ordinal();
+    }
+
+    /** 自身が1位である前提で、2位との点差を求める。 */
+    static int pointGapToSecondPlace(AiContext ctx) {
+        int secondPlacePoints = ctx.others().stream()
+                .mapToInt(PlayerPublicView::points)
+                .max()
+                .orElse(Integer.MIN_VALUE);
+        return ctx.ownPoints() - secondPlacePoints;
     }
 
     /** 指定した牌で暗槓した場合のシャンテン数を求める。 */
