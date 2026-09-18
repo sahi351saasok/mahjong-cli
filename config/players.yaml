@@ -1,9 +1,9 @@
 players:
-  - name: "CPU1"
+  - name: "CPU-A"
     strategy: aggressive
-  - name: "CPU2"
+  - name: "CPU-B"
     strategy: balance
-  - name: "CPU3"
+  - name: "CPU-D"
     strategy: defensive
-  - name: "CPU4"
+  - name: "CPU-H"
     strategy: hi-score
