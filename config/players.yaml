@@ -1,8 +1,8 @@
 players:
   - name: "CPU-A"
     strategy: aggressive
-  - name: "CPU-B"
-    strategy: balance
+  - name: "CPU-T"
+    strategy: top-prize
   - name: "CPU-D"
     strategy: defensive
   - name: "CPU-H"
