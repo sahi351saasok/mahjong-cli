@@ -14,6 +14,10 @@ public final class StrategyRegistry {
 
     public StrategyRegistry() {
         register("standard", StandardStrategy::new);
+        register("aggressive", AggressiveStrategy::new);
+        register("balance", BalanceStrategy::new);
+        register("defensive", DefensiveStrategy::new);
+        register("hi-score", HiScoreStrategy::new);
     }
 
     public void register(String id, Supplier<PlayerStrategy> factory) {

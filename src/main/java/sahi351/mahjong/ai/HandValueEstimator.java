@@ -34,12 +34,12 @@ public final class HandValueEstimator {
         return waits;
     }
 
-    /** 既にテンパイしている手牌（面前かどうかは問わない）の中で、最も高い基本点を見積もる。 */
-    public static Integer bestScoreForTenpai(List<Tile> concealed13, List<Meld> melds,
-                                              Wind roundWind, Wind seatWind, List<Tile> doraIndicators,
-                                              boolean assumeRiichi) {
+    /** 既にテンパイしている手牌（面前かどうかは問わない）の中で、最も基本点が高くなる和了形を見積もる。 */
+    private static ScoreResult bestResultForTenpai(List<Tile> concealed13, List<Meld> melds,
+                                                     Wind roundWind, Wind seatWind, List<Tile> doraIndicators,
+                                                     boolean assumeRiichi) {
         List<Tile> waits = findWaits(concealed13, melds.size());
-        int best = -1;
+        ScoreResult best = null;
         for (Tile wait : waits) {
             Hand hand = new Hand();
             for (Tile t : concealed13) {
@@ -53,11 +53,27 @@ public final class HandValueEstimator {
                     assumeRiichi, false, false, false, false, false, false, false, false,
                     doraIndicators, List.of());
             ScoreResult result = HandScorer.score(ctx, 0);
-            if (result != null) {
-                best = Math.max(best, result.basePoints());
+            if (result != null && (best == null || result.basePoints() > best.basePoints())) {
+                best = result;
             }
         }
-        return best < 0 ? null : best;
+        return best;
+    }
+
+    /** 既にテンパイしている手牌（面前かどうかは問わない）の中で、最も高い基本点を見積もる。 */
+    public static Integer bestScoreForTenpai(List<Tile> concealed13, List<Meld> melds,
+                                              Wind roundWind, Wind seatWind, List<Tile> doraIndicators,
+                                              boolean assumeRiichi) {
+        ScoreResult best = bestResultForTenpai(concealed13, melds, roundWind, seatWind, doraIndicators, assumeRiichi);
+        return best == null ? null : best.basePoints();
+    }
+
+    /** 既にテンパイしている手牌の中で、最も基本点が高くなる和了形の翻数を見積もる。 */
+    public static Integer bestHanForTenpai(List<Tile> concealed13, List<Meld> melds,
+                                            Wind roundWind, Wind seatWind, List<Tile> doraIndicators,
+                                            boolean assumeRiichi) {
+        ScoreResult best = bestResultForTenpai(concealed13, melds, roundWind, seatWind, doraIndicators, assumeRiichi);
+        return best == null ? null : best.han();
     }
 
     /** まだ1枚多い状態（打牌前）の手牌から、最善の打牌を選んだ場合の最高基本点を見積もる。 */
