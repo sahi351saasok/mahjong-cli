@@ -5,5 +5,5 @@ players:
     strategy: top-prize
   - name: "CPU-D"
     strategy: defensive
-  - name: "CPU-H"
-    strategy: hi-score
+  - name: "CPU-F"
+    strategy: flexible
