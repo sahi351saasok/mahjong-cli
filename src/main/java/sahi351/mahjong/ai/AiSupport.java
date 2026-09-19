@@ -1,11 +1,13 @@
 package sahi351.mahjong.ai;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import sahi351.mahjong.game.Wind;
 import sahi351.mahjong.hand.Hand;
 import sahi351.mahjong.hand.Meld;
 import sahi351.mahjong.hand.ShantenCalculator;
+import sahi351.mahjong.hand.TileIndex;
 import sahi351.mahjong.tile.Tile;
 
 /**
@@ -99,6 +101,30 @@ final class AiSupport {
                 .max()
                 .orElse(Integer.MIN_VALUE);
         return ctx.ownPoints() - secondPlacePoints;
+    }
+
+    /** 国士無双を目標に、么九牌を保持しつつシャンテンが最も進む牌を選ぶ。 */
+    static Tile chooseKokushiDiscard(List<Tile> concealed) {
+        List<Tile> distinct = new ArrayList<>();
+        for (Tile t : concealed) {
+            if (distinct.stream().noneMatch(d -> d.isSameKind(t))) {
+                distinct.add(t);
+            }
+        }
+        Comparator<Tile> comparator = Comparator
+                .comparingInt((Tile t) -> resultingKokushiShanten(concealed, t))
+                .thenComparingInt(t -> -countOfKind(concealed, t));
+        return distinct.stream().min(comparator).orElse(concealed.get(concealed.size() - 1));
+    }
+
+    private static int resultingKokushiShanten(List<Tile> concealed, Tile discard) {
+        List<Tile> sub = new ArrayList<>(concealed);
+        sub.remove(discard);
+        return ShantenCalculator.kokushiShanten(TileIndex.toCounts(sub));
+    }
+
+    private static int countOfKind(List<Tile> tiles, Tile kind) {
+        return (int) tiles.stream().filter(t -> t.isSameKind(kind)).count();
     }
 
     /** 指定した牌で暗槓した場合のシャンテン数を求める。 */

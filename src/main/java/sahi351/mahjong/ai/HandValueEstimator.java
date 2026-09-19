@@ -2,6 +2,7 @@ package sahi351.mahjong.ai;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import sahi351.mahjong.game.Wind;
 import sahi351.mahjong.hand.Hand;
 import sahi351.mahjong.hand.Meld;
@@ -80,6 +81,20 @@ public final class HandValueEstimator {
     public static Integer bestReachableAfterOneDiscard(List<Tile> concealedWithExtra, List<Meld> melds,
                                                          Wind roundWind, Wind seatWind,
                                                          List<Tile> doraIndicators, boolean assumeRiichi) {
+        return bestAfterOneDiscard(concealedWithExtra, melds,
+                tenpai -> bestScoreForTenpai(tenpai, melds, roundWind, seatWind, doraIndicators, assumeRiichi));
+    }
+
+    /** まだ1枚多い状態（打牌前）の手牌から、最善の打牌を選んだ場合の最高翻数を見積もる。 */
+    public static Integer bestHanReachableAfterOneDiscard(List<Tile> concealedWithExtra, List<Meld> melds,
+                                                            Wind roundWind, Wind seatWind,
+                                                            List<Tile> doraIndicators, boolean assumeRiichi) {
+        return bestAfterOneDiscard(concealedWithExtra, melds,
+                tenpai -> bestHanForTenpai(tenpai, melds, roundWind, seatWind, doraIndicators, assumeRiichi));
+    }
+
+    private static Integer bestAfterOneDiscard(List<Tile> concealedWithExtra, List<Meld> melds,
+                                                Function<List<Tile>, Integer> evaluateTenpai) {
         Integer overallBest = null;
         List<Tile> distinctCandidates = new ArrayList<>();
         for (Tile t : concealedWithExtra) {
@@ -100,7 +115,7 @@ public final class HandValueEstimator {
             if (ShantenCalculator.shanten(sub, melds.size()) != 0) {
                 continue;
             }
-            Integer score = bestScoreForTenpai(sub, melds, roundWind, seatWind, doraIndicators, assumeRiichi);
+            Integer score = evaluateTenpai.apply(sub);
             if (score != null && (overallBest == null || score > overallBest)) {
                 overallBest = score;
             }

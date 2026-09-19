@@ -7,7 +7,6 @@ import sahi351.mahjong.game.Wind;
 import sahi351.mahjong.hand.Hand;
 import sahi351.mahjong.hand.Meld;
 import sahi351.mahjong.hand.ShantenCalculator;
-import sahi351.mahjong.hand.TileIndex;
 import sahi351.mahjong.tile.Tile;
 
 /**
@@ -45,7 +44,7 @@ public final class TopPrizeStrategy implements PlayerStrategy {
         }
 
         if (meldCount == 0 && isAimingForYakuman(ctx)) {
-            return chooseDiscardForYakuman(concealed);
+            return AiSupport.chooseKokushiDiscard(concealed);
         }
 
         List<TileEfficiencyEvaluator.Candidate> candidates =
@@ -66,30 +65,6 @@ public final class TopPrizeStrategy implements PlayerStrategy {
 
     private boolean isAimingForYakuman(AiContext ctx) {
         return AiSupport.ownRank(ctx) == 4 && ctx.roundWind() == Wind.SOUTH && ctx.kyokuNumber() == 4;
-    }
-
-    /** 国士無双を目標に、么九牌を保持しつつシャンテンが最も進む牌を切る。 */
-    private Tile chooseDiscardForYakuman(List<Tile> concealed) {
-        List<Tile> distinct = new ArrayList<>();
-        for (Tile t : concealed) {
-            if (distinct.stream().noneMatch(d -> d.isSameKind(t))) {
-                distinct.add(t);
-            }
-        }
-        Comparator<Tile> comparator = Comparator
-                .comparingInt((Tile t) -> resultingKokushiShanten(concealed, t))
-                .thenComparingInt(t -> -countInHand(concealed, t));
-        return distinct.stream().min(comparator).orElse(concealed.get(concealed.size() - 1));
-    }
-
-    private int resultingKokushiShanten(List<Tile> concealed, Tile discard) {
-        List<Tile> sub = new ArrayList<>(concealed);
-        sub.remove(discard);
-        return ShantenCalculator.kokushiShanten(TileIndex.toCounts(sub));
-    }
-
-    private int countInHand(List<Tile> concealed, Tile t) {
-        return (int) concealed.stream().filter(c -> c.isSameKind(t)).count();
     }
 
     @Override
