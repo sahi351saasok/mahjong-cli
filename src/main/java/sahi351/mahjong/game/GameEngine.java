@@ -745,26 +745,8 @@ public final class GameEngine {
             return Integer.compare(a.seatIndex(), b.seatIndex());
         });
 
-        double[] umaByRank = {50, 10, -10, -30};
-        double[] pointsByPlayer = new double[4];
-        int i = 0;
-        while (i < 4) {
-            int j = i;
-            while (j + 1 < 4 && ranked.get(j + 1).points() == ranked.get(i).points()) {
-                j++;
-            }
-            double umaSum = 0;
-            for (int k = i; k <= j; k++) {
-                umaSum += umaByRank[k];
-            }
-            double umaEach = umaSum / (j - i + 1);
-            for (int k = i; k <= j; k++) {
-                Player p = ranked.get(k);
-                double base = p.points() / 1000.0;
-                pointsByPlayer[players.indexOf(p)] = base + umaEach;
-            }
-            i = j + 1;
-        }
+        double[] pointsByPlayer = FinalPointCalculator.calculate(
+                players.stream().mapToInt(Player::points).toArray());
 
         for (int rank = 0; rank < 4; rank++) {
             Player p = ranked.get(rank);
