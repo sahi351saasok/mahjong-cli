@@ -2,3 +2,4 @@
 build/
 logs/*.csv
 !logs/.gitkeep
+mahjong.db

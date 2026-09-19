@@ -1,12 +1,17 @@
 package sahi351.mahjong.game;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import sahi351.mahjong.ai.AiContext;
 import sahi351.mahjong.ai.CallOption;
 import sahi351.mahjong.ai.CallType;
 import sahi351.mahjong.ai.PlayerPublicView;
+import sahi351.mahjong.db.GameDatabase;
+import sahi351.mahjong.db.PlayerStats;
+import sahi351.mahjong.db.YakuCount;
 import sahi351.mahjong.hand.Hand;
 import sahi351.mahjong.hand.Meld;
 import sahi351.mahjong.hand.MeldType;
@@ -19,6 +24,7 @@ import sahi351.mahjong.score.ScoreResult;
 import sahi351.mahjong.tile.Suit;
 import sahi351.mahjong.tile.Tile;
 import sahi351.mahjong.tile.Wall;
+import sahi351.mahjong.yaku.YakuResult;
 
 /**
  * 半荘・東風戦・1局のみの対局進行を司るゲームエンジン。
@@ -29,12 +35,14 @@ public final class GameEngine {
     private final GameMode mode;
     private final Random random;
     private final GameLogger logger;
+    private final GameDatabase database;
 
     private Wind roundWind = Wind.EAST;
     private int kyokuNumber = 1;
     private int honba = 0;
     private int riichiSticks = 0;
     private int dealerSeatIndex = 0;
+    private long gameId;
 
     private Wall wall;
     private int turnCount;
@@ -42,8 +50,10 @@ public final class GameEngine {
     private boolean[] hasDrawn;
     private boolean kyokuEnded;
     private int kanCountThisKyoku;
+    private final Map<Integer, ScoreResult> kyokuWinResults = new HashMap<>();
 
-    public GameEngine(List<Player> players, GameMode mode, Random random, GameLogger logger) {
+    public GameEngine(List<Player> players, GameMode mode, Random random, GameLogger logger,
+                       GameDatabase database) {
         if (players.size() != 4) {
             throw new IllegalArgumentException("プレイヤーは4人必要です");
         }
@@ -51,10 +61,12 @@ public final class GameEngine {
         this.mode = mode;
         this.random = random;
         this.logger = logger;
+        this.database = database;
     }
 
     public void run() {
         dealerSeatIndex = random.nextInt(4);
+        gameId = database.startGame();
         logger.console("=== 対局開始 (" + (mode == GameMode.HANCHAN ? "半荘戦" : "1局のみ") + ") ===");
         logger.console("起家: " + players.get(dealerSeatIndex).name());
         logger.consoleBlank();
@@ -120,7 +132,23 @@ public final class GameEngine {
         }
 
         printKyokuEndSummary(pointsBefore);
+        recordKyokuToDatabase();
         return lastKyokuWasRenchan;
+    }
+
+    private void recordKyokuToDatabase() {
+        String label = kyokuLabel();
+        for (Player p : players) {
+            ScoreResult result = kyokuWinResults.get(p.seatIndex());
+            boolean won = result != null;
+            boolean naki = !p.hand().isMenzen();
+            boolean riichi = p.isRiichi();
+            Integer score = won ? result.totalPoints() : null;
+            List<String> yakuNames = won
+                    ? result.yakuList().stream().map(YakuResult::name).toList()
+                    : List.of();
+            database.recordKyokuResult(gameId, label, honba, p.name(), won, naki, riichi, score, yakuNames);
+        }
     }
 
     private String kyokuLabel() {
@@ -177,6 +205,7 @@ public final class GameEngine {
         kyokuEnded = false;
         kanCountThisKyoku = 0;
         lastKyokuWasRenchan = false;
+        kyokuWinResults.clear();
     }
 
     /** 1人のツモ番を処理する。ポン・チー等で他家に手番が移った場合も含め、この呼び出し内で完結する。 */
@@ -585,6 +614,7 @@ public final class GameEngine {
     }
 
     private void finishWithTsumo(Player winner, ScoreResult result) {
+        kyokuWinResults.put(winner.seatIndex(), result);
         logger.console(winner.name() + ": ツモ和了!");
         logScoreResult(winner, result);
         logger.record(kyokuLabel(), honba, turnCount, winner.name(), "ツモ和了", yakuSummary(result));
@@ -620,6 +650,7 @@ public final class GameEngine {
         for (int i = 0; i < winners.size(); i++) {
             Player winner = winners.get(i);
             ScoreResult result = results.get(i);
+            kyokuWinResults.put(winner.seatIndex(), result);
             logger.console(winner.name() + ": ロン和了! (放銃: " + discarder.name() + ")");
             logScoreResult(winner, result);
             logger.record(kyokuLabel(), honba, turnCount, winner.name(), "ロン和了",
@@ -739,6 +770,28 @@ public final class GameEngine {
             Player p = ranked.get(rank);
             double pt = pointsByPlayer[players.indexOf(p)];
             logger.console(String.format("%d位: %s  %d点  %.1fpt", rank + 1, p.name(), p.points(), pt));
+            database.recordGameResult(gameId, p.name(), p.points(), pt, rank + 1);
+        }
+
+        printCumulativeStats();
+    }
+
+    private void printCumulativeStats() {
+        logger.consoleBlank();
+        logger.console("=== 通算成績 ===");
+        for (Player p : players) {
+            PlayerStats stats = database.statsFor(p.name());
+            logger.console(String.format(
+                    "%s: 通算%.1fpt 平均順位%.2f 和了率%.1f%% 副露率%.1f%% 平均打点%.0f点 リーチ率%.1f%%",
+                    p.name(), stats.totalPoints(), stats.avgRank(),
+                    stats.winRate() * 100, stats.nakiRate() * 100,
+                    stats.avgScore(), stats.riichiRate() * 100));
+        }
+
+        logger.consoleBlank();
+        logger.console("=== 役の通算成績 ===");
+        for (YakuCount yc : database.yakuCounts()) {
+            logger.console(String.format("%s: %d回", yc.name(), yc.count()));
         }
     }
 }

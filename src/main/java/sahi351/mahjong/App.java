@@ -8,6 +8,7 @@ import sahi351.mahjong.ai.PlayerStrategy;
 import sahi351.mahjong.ai.StrategyRegistry;
 import sahi351.mahjong.config.PlayerConfig;
 import sahi351.mahjong.config.PlayersConfigLoader;
+import sahi351.mahjong.db.GameDatabase;
 import sahi351.mahjong.game.GameEngine;
 import sahi351.mahjong.game.GameMode;
 import sahi351.mahjong.log.GameLogger;
@@ -34,8 +35,9 @@ public final class App {
             players.add(new Player(cfg.name(), strategy, i));
         }
 
-        try (GameLogger logger = new GameLogger(Path.of("logs"))) {
-            GameEngine engine = new GameEngine(players, mode, new Random(), logger);
+        try (GameLogger logger = new GameLogger(Path.of("logs"));
+             GameDatabase database = new GameDatabase(Path.of("mahjong.db"))) {
+            GameEngine engine = new GameEngine(players, mode, new Random(), logger, database);
             engine.run();
         }
     }

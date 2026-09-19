@@ -10,6 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import sahi351.mahjong.ai.StandardStrategy;
+import sahi351.mahjong.db.GameDatabase;
 import sahi351.mahjong.log.GameLogger;
 import sahi351.mahjong.player.Player;
 
@@ -30,8 +31,9 @@ class GameEngineIntegrationTest {
     @ValueSource(ints = {1, 2, 3, 4, 5})
     void singleKyokuGameConservesTotalPoints(int seed) {
         List<Player> players = newPlayers();
-        try (GameLogger logger = new GameLogger(tempDir)) {
-            GameEngine engine = new GameEngine(players, GameMode.SINGLE_KYOKU, new Random(seed), logger);
+        try (GameLogger logger = new GameLogger(tempDir);
+             GameDatabase database = new GameDatabase(tempDir.resolve("mahjong-" + seed + ".db"))) {
+            GameEngine engine = new GameEngine(players, GameMode.SINGLE_KYOKU, new Random(seed), logger, database);
             engine.run();
         }
         int total = players.stream().mapToInt(Player::points).sum();
@@ -42,8 +44,9 @@ class GameEngineIntegrationTest {
     @ValueSource(ints = {10, 20, 30})
     void hanchanGameConservesTotalPoints(int seed) {
         List<Player> players = newPlayers();
-        try (GameLogger logger = new GameLogger(tempDir)) {
-            GameEngine engine = new GameEngine(players, GameMode.HANCHAN, new Random(seed), logger);
+        try (GameLogger logger = new GameLogger(tempDir);
+             GameDatabase database = new GameDatabase(tempDir.resolve("mahjong-" + seed + ".db"))) {
+            GameEngine engine = new GameEngine(players, GameMode.HANCHAN, new Random(seed), logger, database);
             engine.run();
         }
         int total = players.stream().mapToInt(Player::points).sum();
